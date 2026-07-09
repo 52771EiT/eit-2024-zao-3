@@ -1,41 +1,55 @@
 # System kontroli wejścia/wyjścia z losomatem
 
-Projekt przedstawia prosty system kontroli przejścia zbudowany na mikrokontrolerze **ATmega328P / Arduino UNO/Nano**, wyświetlaczu **LCD I2C**, diodach LED sterowanych przez **74HC595**, czterech przyciskach oraz buzzerze.
+Projekt przedstawia prototyp systemu kontroli przejścia zbudowany na mikrokontrolerze **ATmega328P / Arduino UNO / Arduino Nano**. System obsługuje wejście i wyjście osób, losową kontrolę przy wyjściu, licznik osób w środku oraz sygnalizację na wyświetlaczu LCD, diodach LED i buzzerze.
 
-System obsługuje procedurę wejścia, procedurę wyjścia, losową kontrolę osoby wychodzącej, licznik osób w środku oraz sygnalizację świetlną i dźwiękową.
+Projekt został napisany w języku **C dla AVR**, bez użycia Arduino `setup()` / `loop()`.
 
 ---
 
-## Funkcje projektu
+## Podgląd działania
 
-Projekt realizuje następujące funkcje:
+| Prototyp układu | Sygnalizacja LED |
+|---|---|
+| ![Widok całego prototypu](docs/images/01-prototype-overview.jpg) | ![Diody LED prezentujące stan systemu](docs/images/02-control-leds.jpg) |
 
-* symulacja karty wejścia,
-* symulacja karty wyjścia,
-* losomat z szansą 50/50 na kontrolę,
-* licznik osób znajdujących się w środku,
-* komunikaty na LCD 16x2,
-* strzałka wejścia,
-* strzałka wyjścia,
-* sygnalizacja kontroli wszystkimi diodami,
-* buzzer aktywny podczas odblokowania drzwi,
-* buzzer przerywany podczas kontroli,
-* blokowanie niepoprawnych akcji,
-* powrót do aktualnej procedury po błędnej akcji.
+| Stan procedury | Okablowanie i moduły |
+|---|---|
+| ![Przykładowy stan pracy układu](docs/images/03-state-transition.jpg) | ![Widok podłączeń na płytce prototypowej](docs/images/04-hardware-wiring.jpg) |
+
+### Stan oczekiwania na losomat
+
+![LCD pokazujący komunikat Wcisnij losomat](docs/images/05-lcd-lottery.jpg)
+
+---
+
+## Główne funkcje
+
+- symulacja karty wejścia,
+- symulacja karty wyjścia,
+- losomat z prawdopodobieństwem kontroli około 50%,
+- licznik osób znajdujących się w środku,
+- komunikaty na LCD 16x2 przez I2C,
+- sygnalizacja wejścia strzałką w prawo,
+- sygnalizacja wyjścia strzałką w lewo,
+- sygnalizacja kontroli przez zapalenie wszystkich diod,
+- buzzer ciągły podczas odblokowania przejścia,
+- buzzer przerywany podczas kontroli,
+- obsługa niepoprawnych akcji bez resetowania całej procedury.
 
 ---
 
 ## Elementy użyte w projekcie
 
-| Element                         | Opis                                             |
-| ------------------------------- | ------------------------------------------------ |
-| ATmega328P / Arduino UNO / Nano | Główny mikrokontroler                            |
-| LCD 16x2 I2C                    | Wyświetlanie stanu systemu                       |
-| 74HC595                         | Rejestr przesuwny do sterowania diodami          |
-| Diody LED                       | Strzałki oraz sygnalizacja kontroli              |
-| 4 przyciski                     | Karta wejścia, karta wyjścia, losomat, krańcówka |
-| Buzzer EAK-00786                | Aktywny buzzer 5 V                               |
-| Płytka prototypowa              | Połączenia testowe                               |
+| Element | Zastosowanie |
+|---|---|
+| ATmega328P / Arduino UNO / Nano | Główny mikrokontroler |
+| LCD 16x2 I2C | Wyświetlanie komunikatów i licznika osób |
+| 74HC595 | Sterowanie diodami LED |
+| Diody LED | Strzałki wejścia/wyjścia oraz sygnalizacja kontroli |
+| 4 przyciski | Karta wejścia, karta wyjścia, losomat, krańcówka |
+| Buzzer EAK-00786 | Sygnalizacja dźwiękowa |
+| Płytka prototypowa | Montaż testowy układu |
+| Przewody połączeniowe | Połączenia między modułami |
 
 ---
 
@@ -44,44 +58,46 @@ Projekt realizuje następujące funkcje:
 Dla Arduino UNO/Nano:
 
 | LCD I2C | Arduino |
-| ------- | ------- |
-| GND     | GND     |
-| VCC     | 5V      |
-| SDA     | A4      |
-| SCL     | A5      |
+|---|---|
+| GND | GND |
+| VCC | 5V |
+| SDA | A4 |
+| SCL | A5 |
 
-W kodzie domyślnie używany jest adres:
+Domyślny adres LCD w kodzie:
 
 ```c
 LCD_Init(0x27);
 ```
 
-Jeżeli LCD nie działa, warto sprawdzić adres `0x3F`:
+Jeżeli LCD nie pokazuje tekstu, można spróbować adresu:
 
 ```c
 LCD_Init(0x3F);
 ```
 
+Warto też pokręcić potencjometrem kontrastu na module I2C.
+
 ---
 
 ## Podłączenie przycisków
 
-Przyciski działają z wewnętrznymi rezystorami pull-up mikrokontrolera.
+Przyciski są podłączone do masy i działają z wewnętrznym rezystorem pull-up mikrokontrolera.
 
-Każdy przycisk należy podłączyć według schematu:
+Schemat dla każdego przycisku:
 
 ```text
 PIN Arduino ---- przycisk ---- GND
 ```
 
-Nie podłączamy przycisków do 5 V.
+Nie podłączamy przycisków do 5V.
 
-| Funkcja         | Pin Arduino | Port AVR |
-| --------------- | ----------: | -------- |
-| Karta wejścia   |          D2 | PD2      |
-| Karta wyjścia   |          D3 | PD3      |
-| Losomat         |          D4 | PD4      |
-| Krańcówka drzwi |          D5 | PD5      |
+| Funkcja | Pin Arduino | Port AVR |
+|---|---:|---|
+| Karta wejścia | D2 | PD2 |
+| Karta wyjścia | D3 | PD3 |
+| Losomat | D4 | PD4 |
+| Krańcówka drzwi/przejścia | D5 | PD5 |
 
 Logika wejść:
 
@@ -100,14 +116,12 @@ Dlatego w kodzie używane jest makro:
 
 ## Podłączenie buzzera
 
-Użyty buzzer: **EAK-00786**, czyli aktywny buzzer z generatorem.
-
-Podłączenie:
+Użyty buzzer to **EAK-00786**, czyli aktywny buzzer z generatorem.
 
 | Buzzer | Arduino |
-| ------ | ------- |
-| +      | D6      |
-| -      | GND     |
+|---|---|
+| + | D6 |
+| - | GND |
 
 W kodzie:
 
@@ -115,22 +129,21 @@ W kodzie:
 #define BUZZER_PIN PD6
 ```
 
-Buzzer działa następująco:
+Działanie buzzera:
 
-| Stan              | Działanie buzzera          |
-| ----------------- | -------------------------- |
-| Drzwi odblokowane | sygnał ciągły              |
-| Osoba przechodzi  | buzzer wyłączony           |
-| Kontrola          | sygnał przerywany co 0,5 s |
-| Idle              | buzzer wyłączony           |
+| Stan systemu | Buzzer |
+|---|---|
+| Wejście odblokowane na 5 s | sygnał ciągły |
+| Wyjście odblokowane na 5 s | sygnał ciągły |
+| Osoba przechodzi | wyłączony |
+| Kontrola | sygnał przerywany co 0,5 s |
+| Idle | wyłączony |
 
 ---
 
 ## Podłączenie rejestru 74HC595
 
-Rejestr 74HC595 służy do sterowania diodami LED, które tworzą strzałki oraz sygnalizację kontroli.
-
-W projekcie wykorzystywana jest funkcja:
+Rejestr 74HC595 steruje diodami LED. W projekcie używana jest funkcja:
 
 ```c
 HW_ShiftOut(uint8_t data);
@@ -145,20 +158,24 @@ Przykładowe wartości wysyłane do rejestru:
 #define LED_ALL     0xFF
 ```
 
-Znaczenie:
-
-| Wartość      | Efekt                              |
-| ------------ | ---------------------------------- |
-| `STRZALKA_P` | strzałka w prawo, wejście          |
-| `STRZALKA_L` | strzałka w lewo, wyjście           |
-| `LED_OFF`    | wszystkie diody zgaszone           |
-| `LED_ALL`    | wszystkie diody zapalone, kontrola |
+| Wartość | Efekt |
+|---|---|
+| `STRZALKA_P` | strzałka wejścia, czyli w prawo |
+| `STRZALKA_L` | strzałka wyjścia, czyli w lewo |
+| `LED_OFF` | wszystkie diody zgaszone |
+| `LED_ALL` | wszystkie diody zapalone podczas kontroli |
 
 ---
 
-## Logika działania systemu
+## Logika działania
 
-### Stan początkowy
+System działa jako maszyna stanów. Nie wykonuje kolejnych ekranów automatycznie, tylko czeka na akcje użytkownika: kartę, losomat albo krańcówkę.
+
+---
+
+## Procedura wejścia
+
+### 1. Stan początkowy
 
 Po uruchomieniu system przechodzi do stanu `Idle`.
 
@@ -169,18 +186,9 @@ Idle
 Osoby: 0
 ```
 
-System czeka na jedną z akcji:
-
-* karta wejścia,
-* karta wyjścia,
-* losomat,
-* krańcówka drzwi.
-
 ---
 
-## Procedura wejścia
-
-### 1. Użycie karty wejścia
+### 2. Użycie karty wejścia
 
 Użytkownik naciska przycisk karty wejścia.
 
@@ -199,15 +207,15 @@ Czas: 5 sek
 
 W tym stanie:
 
-* zapala się strzałka w prawo,
-* buzzer piszczy ciągle,
-* drzwi są logicznie odblokowane przez 5 sekund.
+- zapala się strzałka w prawo,
+- buzzer piszczy ciągle,
+- system czeka maksymalnie 5 sekund na aktywowanie krańcówki.
 
 ---
 
-### 2. Brak przejścia
+### 3. Brak przejścia
 
-Jeżeli w ciągu 5 sekund krańcówka nie zostanie aktywowana, system blokuje procedurę.
+Jeżeli w ciągu 5 sekund krańcówka nie zostanie aktywowana, system blokuje przejście.
 
 LCD pokazuje:
 
@@ -216,17 +224,13 @@ Czas minal
 Zablokowano
 ```
 
-Następnie system wraca do:
-
-```c
-STATE_IDLE
-```
+Następnie system wraca do `Idle`.
 
 ---
 
-### 3. Osoba przechodzi
+### 4. Osoba przechodzi
 
-Jeżeli osoba aktywuje krańcówkę, system przechodzi do stanu:
+Jeżeli osoba aktywuje krańcówkę, system przechodzi do:
 
 ```c
 STATE_ENTRY_PASSING
@@ -241,22 +245,16 @@ Przechodzi...
 
 W tym momencie:
 
-* strzałka gaśnie,
-* buzzer gaśnie.
+- strzałka gaśnie,
+- buzzer gaśnie.
 
 ---
 
-### 4. Zakończenie wejścia
+### 5. Zakończenie wejścia
 
 Po puszczeniu krańcówki system uznaje, że osoba weszła.
 
-Licznik zwiększa się o 1:
-
-```text
-Osoby: 1
-```
-
-System wraca do stanu `Idle`.
+Licznik osób zwiększa się o 1 i system wraca do `Idle`.
 
 ---
 
@@ -266,7 +264,7 @@ System wraca do stanu `Idle`.
 
 Użytkownik naciska przycisk karty wyjścia.
 
-Jeżeli licznik osób jest większy od 0, system przechodzi do stanu:
+Jeżeli licznik osób jest większy od 0, system przechodzi do:
 
 ```c
 STATE_EXIT_WAIT_LOTTERY
@@ -285,12 +283,10 @@ System czeka na kliknięcie losomatu.
 
 ### 2. Losowanie
 
-Po naciśnięciu losomatu system losuje wynik 50/50.
+Po naciśnięciu losomatu system losuje wynik około 50/50:
 
-Możliwe wyniki:
-
-* brak kontroli,
-* kontrola.
+- brak kontroli,
+- kontrola.
 
 ---
 
@@ -311,9 +307,9 @@ Czas: 5 sek
 
 W tym stanie:
 
-* zapala się strzałka w lewo,
-* buzzer piszczy ciągle,
-* użytkownik ma 5 sekund na rozpoczęcie przejścia.
+- zapala się strzałka w lewo,
+- buzzer piszczy ciągle,
+- użytkownik ma 5 sekund na rozpoczęcie przejścia.
 
 ---
 
@@ -334,11 +330,11 @@ Kontrola!
 
 W tym stanie:
 
-* świecą wszystkie diody,
-* buzzer piszczy przerywanie,
-* kontrola trwa 15 sekund.
+- świecą wszystkie diody,
+- buzzer działa przerywanie,
+- kontrola trwa 15 sekund.
 
-Buzzer podczas kontroli działa w trybie:
+Buzzer podczas kontroli:
 
 ```text
 0,5 s ON
@@ -370,8 +366,8 @@ Wychodzi...
 
 W tym momencie:
 
-* strzałka gaśnie,
-* buzzer gaśnie.
+- strzałka gaśnie,
+- buzzer gaśnie.
 
 ---
 
@@ -379,31 +375,23 @@ W tym momencie:
 
 Po puszczeniu krańcówki system uznaje, że osoba wyszła.
 
-Licznik zmniejsza się o 1:
-
-```text
-Osoby: 0
-```
-
-System wraca do stanu `Idle`.
+Licznik zmniejsza się o 1 i system wraca do `Idle`.
 
 ---
 
 ## Niepoprawne akcje
 
-System blokuje błędne akcje, ale nie resetuje całej procedury.
+System obsługuje błędne akcje bez resetowania całej procedury.
 
-Przykłady:
+| Sytuacja | Komunikat |
+|---|---|
+| Losomat wciśnięty bez wcześniejszej karty | `Najpierw / uzyj karty` |
+| Karta wyjścia przy liczniku 0 | `Brak osob / w srodku` |
+| Drzwi otwarte przed kliknięciem losomatu | `Najpierw / losomat` |
+| Drzwi otwarte podczas kontroli | `Trwa / kontrola` |
+| Zła akcja w trakcie procedury | `Niepoprawna / akcja` |
 
-| Sytuacja                       | Komunikat               |
-| ------------------------------ | ----------------------- |
-| Losomat wciśnięty bez karty    | `Najpierw / uzyj karty` |
-| Karta wyjścia przy liczniku 0  | `Brak osob / w srodku`  |
-| Drzwi otwarte przed losomatem  | `Najpierw / losomat`    |
-| Drzwi otwarte podczas kontroli | `Trwa / kontrola`       |
-| Zła karta w trakcie procedury  | `Niepoprawna / akcja`   |
-
-Po pokazaniu komunikatu system wraca do poprzedniego stanu procedury.
+Po pokazaniu komunikatu system wraca do poprzedniej akcji.
 
 Przykład:
 
@@ -419,7 +407,7 @@ Najpierw
 losomat
 ```
 
-Po chwili system wraca do:
+Po chwili system wróci do:
 
 ```text
 Wcisnij
@@ -430,23 +418,23 @@ losomat
 
 ## Stany systemu
 
-| Stan                      | Znaczenie                       |
-| ------------------------- | ------------------------------- |
-| `STATE_IDLE`              | Normalna praca, oczekiwanie     |
-| `STATE_ENTRY_UNLOCKED`    | Wejście odblokowane na 5 sekund |
-| `STATE_ENTRY_PASSING`     | Osoba wchodzi                   |
-| `STATE_EXIT_WAIT_LOTTERY` | Oczekiwanie na losomat          |
-| `STATE_EXIT_SEARCH`       | Kontrola 15 sekund              |
-| `STATE_EXIT_UNLOCKED`     | Wyjście odblokowane na 5 sekund |
-| `STATE_EXIT_PASSING`      | Osoba wychodzi                  |
+| Stan | Znaczenie |
+|---|---|
+| `STATE_IDLE` | Normalna praca, oczekiwanie na akcję |
+| `STATE_ENTRY_UNLOCKED` | Wejście odblokowane na 5 sekund |
+| `STATE_ENTRY_PASSING` | Osoba wchodzi |
+| `STATE_EXIT_WAIT_LOTTERY` | Oczekiwanie na kliknięcie losomatu |
+| `STATE_EXIT_SEARCH` | Kontrola trwająca 15 sekund |
+| `STATE_EXIT_UNLOCKED` | Wyjście odblokowane na 5 sekund |
+| `STATE_EXIT_PASSING` | Osoba wychodzi |
 
 ---
 
 ## Diagram działania
 
-```text
-WEJŚCIE
+### Wejście
 
+```text
 Idle
   |
   | karta wejścia
@@ -462,9 +450,9 @@ Entry Passing
 Idle + licznik +1
 ```
 
-```text
-WYJŚCIE
+### Wyjście
 
+```text
 Idle
   |
   | karta wyjścia
@@ -494,7 +482,7 @@ Idle + licznik -1
 
 ## Struktura projektu
 
-Przykładowa struktura plików:
+Przykładowa struktura repozytorium:
 
 ```text
 AVR/
@@ -504,23 +492,30 @@ AVR/
 ├── hardware.c
 ├── hardware.h
 ├── makefile
-└── README.md
+├── README.md
+└── docs/
+    └── images/
+        ├── 01-prototype-overview.jpg
+        ├── 02-control-leds.jpg
+        ├── 03-state-transition.jpg
+        ├── 04-hardware-wiring.jpg
+        └── 05-lcd-lottery.jpg
 ```
 
-Opcjonalnie, jeżeli używasz oddzielnego modułu strzałek:
+Opcjonalnie, jeżeli projekt zawiera oddzielny moduł strzałek:
 
 ```text
 ├── arrow.c
 └── arrow.h
 ```
 
-W aktualnej wersji główna logika używa bezpośrednio:
+Aktualna wersja głównej logiki używa bezpośrednio:
 
 ```c
 HW_ShiftOut(...);
 ```
 
-więc `arrow.c` nie jest wymagany.
+więc pliki `arrow.c` i `arrow.h` nie są wymagane.
 
 ---
 
@@ -538,7 +533,7 @@ INC = \
 -I.
 ```
 
-Jeżeli zostawiasz `arrow.c`, możesz mieć:
+Jeżeli zostawiasz `arrow.c`:
 
 ```makefile
 SRC = \
@@ -571,24 +566,22 @@ make flash
 
 Sprawdź:
 
-* adres LCD: `0x27` albo `0x3F`,
-* potencjometr kontrastu na module I2C,
-* przewody SDA/SCL,
-* zasilanie 5 V.
+- adres LCD: `0x27` albo `0x3F`,
+- potencjometr kontrastu na module I2C,
+- przewody SDA/SCL,
+- zasilanie 5V.
 
 ---
 
 ### Przyciski działają odwrotnie
 
-W tym projekcie przyciski są podłączone do GND.
-
-Poprawne podłączenie:
+Przyciski muszą być podłączone do GND:
 
 ```text
 pin Arduino ---- przycisk ---- GND
 ```
 
-Nie używamy zewnętrznego rezystora pull-up, ponieważ pull-up jest włączony programowo.
+Wewnętrzny pull-up jest włączony programowo.
 
 ---
 
@@ -609,14 +602,14 @@ przewodzą, gdy przycisk jest wciśnięty
 
 ### Buzzer nie piszczy
 
-Sprawdź:
+Sprawdź podłączenie:
 
 ```text
 + buzzera -> D6
 - buzzera -> GND
 ```
 
-Dla buzzera EAK-00786 wystarczy podać stan wysoki na D6, ponieważ jest to buzzer aktywny z generatorem.
+Dla buzzera EAK-00786 wystarczy podać stan wysoki na D6, ponieważ jest to buzzer aktywny.
 
 ---
 
@@ -652,24 +645,18 @@ static void Arrow_Exit(void)
 
 ---
 
-## Autorzy
-
-Projekt przygotowany jako ćwiczenie z programowania mikrokontrolerów AVR, obsługi LCD I2C, rejestru przesuwnego 74HC595 oraz implementacji prostej maszyny stanów w języku C.
-
----
-
 ## Podsumowanie
 
-Projekt pokazuje praktyczne zastosowanie maszyny stanów w systemie kontroli przejścia.
+Projekt pokazuje praktyczne zastosowanie maszyny stanów w języku C na mikrokontrolerze AVR.
 
-Najważniejsze elementy działania:
+Najważniejsze zasady działania:
 
-* karta wejścia uruchamia wejście,
-* karta wyjścia uruchamia wyjście,
-* losomat decyduje o kontroli,
-* kontrola trwa 15 sekund,
-* przejście musi nastąpić w ciągu 5 sekund od odblokowania,
-* licznik osób aktualizuje się po puszczeniu krańcówki,
-* błędne akcje nie przerywają procedury,
-* LCD pokazuje aktualny stan systemu,
-* LED-y i buzzer sygnalizują aktualną akcję.
+- karta wejścia uruchamia procedurę wejścia,
+- karta wyjścia uruchamia procedurę wyjścia,
+- losomat decyduje o kontroli,
+- kontrola trwa 15 sekund,
+- przejście musi rozpocząć się w ciągu 5 sekund od odblokowania,
+- licznik osób aktualizuje się dopiero po puszczeniu krańcówki,
+- błędne akcje nie przerywają procedury,
+- LCD pokazuje aktualny stan,
+- LED-y i buzzer sygnalizują aktualną akcję.
